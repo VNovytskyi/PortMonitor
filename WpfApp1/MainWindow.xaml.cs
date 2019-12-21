@@ -23,7 +23,9 @@ namespace WpfApp1
     public partial class MainWindow : Window
     {
         private static EventWaitHandle allowRefreshComPorts = new ManualResetEvent(initialState: true);
+        private static EventWaitHandle allowRefreshCurrentComPortState = new ManualResetEvent(initialState: false);
 
+        private static Thread RefreshCurrentComPortState = null;
         private static Thread RefreshComPortsList = null;
         private static Thread ConnectToComPort = null;
 
@@ -49,8 +51,42 @@ namespace WpfApp1
 
             serialPort = new SerialPort();
 
+            RefreshCurrentComPortState = new Thread(RefreshCurrentComPortStateFunc);
+            RefreshCurrentComPortState.Start();
+
             RefreshComPortsList = new Thread(RefreshComPortsListFunc);
             RefreshComPortsList.Start();
+
+            AddWithColor("[ OK ] Init BME280", Colors.Green, TextAlignment.Left); 
+            AddWithColor("[ ERROR ] Connect to Wi-Fi", Colors.Red, TextAlignment.Right);
+        }
+
+        void AddWithColor(string s, Color color, TextAlignment ta)
+        {
+            var text = new Run(s) { Foreground = new SolidColorBrush(color) };
+            var p = new Paragraph(text);
+            p.LineHeight = 2;
+            p.TextAlignment = ta;
+            outputField.Document.Blocks.Add(p);
+        }
+
+        private void RefreshCurrentComPortStateFunc()
+        {
+            while(true)
+            {
+                allowRefreshCurrentComPortState.WaitOne();
+
+                bool portState = true;
+                Dispatcher.Invoke(() => portState = serialPort.IsOpen);
+
+                if (!portState)
+                    StopConnection();
+                
+                //Debug
+                Dispatcher.Invoke(() => l.Content = portState);
+
+                Thread.Sleep(100);
+            }
         }
 
         private void RefreshComPortsListFunc()
@@ -183,20 +219,29 @@ namespace WpfApp1
 
         private void Window_Closed(object sender, EventArgs e)
         {
-            RefreshComPortsList.Abort();
+            try
+            {
+                RefreshComPortsList.Abort();
+                RefreshCurrentComPortState.Abort();
+                CloseComPort();
+            }
+            catch
+            {
+
+            }       
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             allowRefreshComPorts.Reset();
-
+     
             DisableSettings();
 
-            ConnectToComPort = new Thread(ConnectToComPortAction);
+            ConnectToComPort = new Thread(ConnectToComPortFunc);
             ConnectToComPort.Start();
         }
 
-        private void ConnectToComPortAction()
+        private void ConnectToComPortFunc()
         {
             string pn = "";
             int br = 0, db = 0, rt = 0, wt = 0;
@@ -232,18 +277,25 @@ namespace WpfApp1
             {
 
             }
-            //Dispatcher.Invoke(() => l.Content = serialPort.Parity);
+
+            allowRefreshCurrentComPortState.Set();
         }
 
         private void DisconnectToComPortButton_Click(object sender, RoutedEventArgs e)
         {
+            StopConnection();
+        }
+
+        private void StopConnection()
+        {
+            EnableSettings();
             CloseComPort();
+            allowRefreshCurrentComPortState.Reset();
+            allowRefreshComPorts.Set();
         }
 
         private void CloseComPort()
         {
-            EnableSettings();
-
             try
             {
                 serialPort.Close();
@@ -251,9 +303,17 @@ namespace WpfApp1
             catch (NullReferenceException)
             {
 
-            }
+            } 
+        }
 
-            allowRefreshComPorts.Set();
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            
+        }
+
+        private void Button_Click_2(object sender, RoutedEventArgs e)
+        {
+            outputField.Document.Blocks.Clear();
         }
     }
 }
