@@ -1,19 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using System.Threading;
 using System.IO.Ports;
+using System.Threading;
+using System.Windows;
+using System.Windows.Documents;
+using System.Windows.Media;
 
 namespace WpfApp1
 {
@@ -28,7 +18,9 @@ namespace WpfApp1
         private static Thread RefreshCurrentComPortState = null;
         private static Thread RefreshComPortsList = null;
         private static Thread ConnectToComPort = null;
-
+        private static Thread TransiverData = null;
+        private static Thread ReceiverData = null;
+        
         private static SerialPort serialPort = null;
 
         private static string[] baudRateValues = { "9600", "115200"};
@@ -37,6 +29,8 @@ namespace WpfApp1
         private static string[] stopBitsValues = { "1", "2", "1.5"};
         private static string[] EndOfLineValues = {"None", "NL", "CR", "NL&CR"};
         private static int oldComPortsAmount = -1;
+
+        private static bool firstDisplayPortList = false;
 
         public MainWindow()
         {
@@ -59,13 +53,37 @@ namespace WpfApp1
             RefreshComPortsList.Start();
         }
 
-        void Write(string s, Color color, TextAlignment ta)
+        private void Write(string s, Color color, TextAlignment ta)
         {
             var text = new Run(s) { Foreground = new SolidColorBrush(color) };
             var p = new Paragraph(text);
             p.LineHeight = 2;
             p.TextAlignment = ta;
             outputField.Document.Blocks.Add(p);
+            outputField.ScrollToEnd();
+        }
+
+        private void WriteLog(string str)
+        {
+            if (CommandTimeCheckBox.IsChecked == true)
+                str = "[ " + DateTime.UtcNow.ToString("HH:mm:ss") + " ] " + str;
+
+            Write(str, Colors.Black, TextAlignment.Left);
+        }
+
+        private void WriteSystemLog(string str)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                string temp = "";
+                if (CommandTimeCheckBox.IsChecked == true)
+                    temp += "[ " + DateTime.UtcNow.ToString("HH:mm:ss") + " ] ";
+
+                temp += str;
+
+                if (SystemLogsCheckBox.IsChecked == true)
+                    Write(temp, Colors.Black, TextAlignment.Left);
+            });
         }
 
         private void RefreshCurrentComPortStateFunc()
@@ -80,13 +98,9 @@ namespace WpfApp1
                 if (!portState)
                 {
                     StopConnection();
-
-                    Dispatcher.Invoke(() =>
-                    {
-                        if (SystemLogsCheckBox.IsChecked == true)
-                            Write("Connection is broken", Colors.Black, TextAlignment.Left);
-                    });
+                    WriteSystemLog("Connection is broken");
                 }
+                
                 Thread.Sleep(100);
             }
         }
@@ -108,6 +122,10 @@ namespace WpfApp1
                         foreach (string port in portNames)
                             PortsComboBox.Items.Add(port);
                     });
+
+                    if(firstDisplayPortList)
+                        WriteSystemLog("Port list updated: " + string.Join(" ", portNames));
+                    firstDisplayPortList = true;
 
                     if (currentComPortsAmount > 0)
                     {
@@ -244,20 +262,12 @@ namespace WpfApp1
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            string temp = "";
+            WriteSystemLog("Try connect to " + PortsComboBox.SelectedItem + " (" +
+                              BaudRateValuesComboBox.SelectedItem + ", " +
+                              DataBitsValuesComboBox.SelectedItem + ", " +
+                              ParityValuesComboBox.SelectedItem + ", " +
+                              StopBitsValuesComboBox.SelectedItem + ")");
 
-            if (CommandTimeCheckBox.IsChecked == true)
-                temp += "[ " + DateTime.UtcNow.ToString("HH:mm:ss") + " ] ";
-
-            temp += "Try connect to " + PortsComboBox.SelectedItem + " (" +
-                          BaudRateValuesComboBox.SelectedItem + ", " +
-                          DataBitsValuesComboBox.SelectedItem + ", " +
-                          ParityValuesComboBox.SelectedItem + ", " +
-                          StopBitsValuesComboBox.SelectedItem + ")";
-
-            if (SystemLogsCheckBox.IsChecked == true)
-                Write(temp, Colors.Black, TextAlignment.Left);
-            
             allowRefreshComPorts.Reset();
             DisableSettings();
             ConnectToComPort = new Thread(ConnectToComPortFunc);
@@ -298,11 +308,7 @@ namespace WpfApp1
             }
             catch (Exception e)
             {
-                Dispatcher.Invoke(() =>
-                {
-                    if (SystemLogsCheckBox.IsChecked == true)
-                        Write(e.Message, Colors.Black, TextAlignment.Left);
-                });
+                WriteSystemLog(e.Message);
                 StopConnection();
                 return;
             }
@@ -313,23 +319,20 @@ namespace WpfApp1
             {
                 DisconnectToComPortButton.IsEnabled = true;
                 SendDataButton.IsEnabled = true;
-
-                if (SystemLogsCheckBox.IsChecked == true)
-                    Write("Connection successful", Colors.Black, TextAlignment.Left);
+                SendDataTextBox.IsEnabled = true;
             });
+            
+            WriteSystemLog("Connection successful");
+
+            ReceiverData = new Thread(ReceiverDataFunc);
+            ReceiverData.IsBackground = true;
+            ReceiverData.Start();
         }
 
         private void DisconnectToComPortButton_Click(object sender, RoutedEventArgs e)
         {
             StopConnection();
-
-            string temp = "";
-            if (CommandTimeCheckBox.IsChecked == true)
-                temp += "[ " + DateTime.UtcNow.ToString("HH:mm:ss") + " ] ";
-            temp += "Connection is closed";
-
-            if (SystemLogsCheckBox.IsChecked == true)
-                Write(temp, Colors.Black, TextAlignment.Left);
+            WriteSystemLog("Connection is closed");
         }
 
         private void StopConnection()
@@ -339,7 +342,12 @@ namespace WpfApp1
             EnableSettings();
             allowRefreshComPorts.Set();
 
-            Dispatcher.Invoke(()=> SendDataButton.IsEnabled = false);
+            Dispatcher.Invoke(()=>
+            {
+                SendDataTextBox.IsEnabled = false;
+                SendDataButton.IsEnabled = false;
+            });
+
         }
 
         private void CloseComPort()
@@ -348,15 +356,98 @@ namespace WpfApp1
             {
                 serialPort.Close();
             }
-            catch (NullReferenceException)
+            catch (Exception e)
             {
-
-            } 
+                WriteSystemLog(e.Message);
+            }
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            
+            TransiverData = new Thread(TransiverDataFunc);
+            TransiverData.Start();
+        }
+
+        private void TransiverDataFunc()
+        {
+            Dispatcher.Invoke(() =>
+            {
+                string strToSend = SendDataTextBox.Text;
+                string strToDisplay = SendDataTextBox.Text;
+
+                switch (EndOfLineComboBox.SelectedItem)
+                {
+                    case "None":
+                        break;
+
+                    case "NL":
+                        strToSend += "\n";
+                        break;
+
+                    case "CR":
+                        strToSend += "\r";
+                        break;
+
+                    case "NL&CR":
+                        strToSend += "\r\n";
+                        break;
+                }
+
+                try
+                {
+                    serialPort.Write(strToSend);
+                }
+                catch(Exception e)
+                {
+                    WriteSystemLog(e.Message);
+                    return;
+                }
+
+
+                if (DisplaySenderCheckBox.IsChecked == true)
+                    strToDisplay = "[ PC ] " + strToDisplay;
+
+                if (DisplayTransiverDataCheckBox.IsChecked == true)
+                    WriteLog(strToDisplay);
+
+                if (ClearInputFieldAfterSendCheckBox.IsChecked == true)
+                    SendDataTextBox.Clear();
+            });
+        }
+
+        private void ReceiverDataFunc()
+        {
+            string str = String.Empty;
+
+            while (true)
+            {
+                str = String.Empty;
+
+                try
+                {
+                    str += serialPort.ReadExisting();
+                }
+                catch (Exception e)
+                {
+                    WriteSystemLog(e.Message);
+                    return;
+                }
+
+                Dispatcher.Invoke(() =>
+                {
+                    if (!String.IsNullOrEmpty(str) && DisplayReceiverDataCheckBox.IsChecked == true)
+                    {
+                        if (DisplaySenderCheckBox.IsChecked == true)
+                            str = "[ Port ] " + str;
+                        
+                        str = str.Trim(new Char[] { '\n', '\r' });
+
+                        WriteLog(str);
+                    }     
+                });
+
+                Thread.Sleep(100);
+            }   
         }
 
         private void Button_Click_2(object sender, RoutedEventArgs e)
