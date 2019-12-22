@@ -23,11 +23,12 @@ namespace WpfApp1
         
         private static SerialPort serialPort = null;
 
-        private static string[] baudRateValues = { "9600", "115200"};
-        private static string[] dataBitsValues = { "5", "6", "7", "8", "9"};
-        private static string[] parityValues = { "None", "Odd", "Even", "Mark", "Space"};
-        private static string[] stopBitsValues = { "1", "2", "1.5"};
-        private static string[] EndOfLineValues = {"None", "NL", "CR", "NL&CR"};
+        readonly private static string[] baudRateValues = { "9600", "115200"};
+        readonly private static string[] dataBitsValues = { "5", "6", "7", "8", "9"};
+        readonly private static string[] parityValues = { "None", "Odd", "Even", "Mark", "Space"};
+        readonly private static string[] stopBitsValues = { "1", "2", "1.5"};
+        readonly private static string[] EndOfLineValues = {"None", "NL", "CR", "NL&CR"};
+        
         private static int oldComPortsAmount = -1;
 
         private static bool firstDisplayPortList = false;
@@ -137,12 +138,24 @@ namespace WpfApp1
                         DisableSettings();
                         setEmptySettings();
                     }
+
+                    if (currentComPortsAmount == 1 && getAutoConnectStatus())
+                    {
+                        InitConnection();
+                    }
                 }
-                
+
                 oldComPortsAmount = currentComPortsAmount;
 
                 Thread.Sleep(100);
             }
+        }
+
+        private bool getAutoConnectStatus()
+        {
+            bool a = false;
+            Dispatcher.Invoke(() => a = AutoConnectToPortCheckBox.IsChecked == true);
+            return a;
         }
 
         private void EnableSettings()
@@ -262,11 +275,17 @@ namespace WpfApp1
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            WriteSystemLog("Try connect to " + PortsComboBox.SelectedItem + " (" +
+            InitConnection();
+        }
+
+        private void InitConnection()
+        {
+            Dispatcher.Invoke(()=> WriteSystemLog("Try connect to " + PortsComboBox.SelectedItem + " (" +
                               BaudRateValuesComboBox.SelectedItem + ", " +
                               DataBitsValuesComboBox.SelectedItem + ", " +
                               ParityValuesComboBox.SelectedItem + ", " +
-                              StopBitsValuesComboBox.SelectedItem + ")");
+                              StopBitsValuesComboBox.SelectedItem + ")"));
+            
 
             allowRefreshComPorts.Reset();
             DisableSettings();
@@ -299,7 +318,6 @@ namespace WpfApp1
                 serialPort.BaudRate = br;
                 serialPort.DataBits = db;
                 serialPort.Parity = p;
-                Dispatcher.Invoke(() => l.Content = sb);
                 serialPort.StopBits = sb;
                 serialPort.ReadTimeout = rt;
                 serialPort.WriteTimeout = wt;
@@ -399,7 +417,7 @@ namespace WpfApp1
                 }
                 catch(Exception e)
                 {
-                    WriteSystemLog(e.Message);
+                    WriteSystemLog("TransiverDataFunc" + e.Message);
                     return;
                 }
 
@@ -429,7 +447,7 @@ namespace WpfApp1
                 }
                 catch (Exception e)
                 {
-                    WriteSystemLog(e.Message);
+                    //WriteSystemLog("ReceiverDataFunc" + e.Message);
                     return;
                 }
 
