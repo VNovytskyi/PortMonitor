@@ -56,12 +56,17 @@ namespace WpfApp1
 
         private void Write(string s, Color color, TextAlignment ta)
         {
-            var text = new Run(s) { Foreground = new SolidColorBrush(color) };
+            Dispatcher.Invoke(() =>
+            {
+                var text = new Run(s) { Foreground = new SolidColorBrush(color) };
             var p = new Paragraph(text);
             p.LineHeight = 2;
             p.TextAlignment = ta;
-            outputField.Document.Blocks.Add(p);
-            outputField.ScrollToEnd();
+
+            
+                outputField.Document.Blocks.Add(p);
+                outputField.ScrollToEnd();
+            });
         }
 
         private void WriteLog(string str)
@@ -91,17 +96,20 @@ namespace WpfApp1
 
         private void WriteSystemLog(string str)
         {
-            Dispatcher.Invoke(() =>
-            {
-                string temp = "";
-                if (CommandTimeCheckBox.IsChecked == true)
-                    temp += "[ " + DateTime.UtcNow.ToString("HH:mm:ss") + " ] ";
+            bool commandTime = false;
+            Dispatcher.Invoke(() => commandTime = CommandTimeCheckBox.IsChecked == true);
 
-                temp += str;
+            string temp = "";
+            if (commandTime)
+                temp += "[ " + DateTime.UtcNow.ToString("HH:mm:ss") + " ] ";
 
-                if (SystemLogsCheckBox.IsChecked == true)
-                    Write(temp, Colors.Black, TextAlignment.Left);
-            });
+            temp += str;
+
+            bool systemLogs = false;
+            Dispatcher.Invoke(() => systemLogs = SystemLogsCheckBox.IsChecked == true);
+            
+            if (systemLogs)
+                Write(temp, Colors.Black, TextAlignment.Left);
         }
 
         private void RefreshCurrentComPortStateFunc()
@@ -297,12 +305,15 @@ namespace WpfApp1
 
         private void InitConnection()
         {
-            Dispatcher.Invoke(()=> WriteSystemLog("Try connect to " + PortsComboBox.SelectedItem + " (" +
+            string str = string.Empty;
+
+            Dispatcher.Invoke(()=> str = "Try connect to " + PortsComboBox.SelectedItem + " (" +
                               BaudRateValuesComboBox.SelectedItem + ", " +
                               DataBitsValuesComboBox.SelectedItem + ", " +
                               ParityValuesComboBox.SelectedItem + ", " +
-                              StopBitsValuesComboBox.SelectedItem + ")"));
-            
+                              StopBitsValuesComboBox.SelectedItem + ")");
+
+            WriteSystemLog(str);
 
             allowRefreshComPorts.Reset();
             DisableSettings();
@@ -469,7 +480,7 @@ namespace WpfApp1
                 }
                 catch (Exception e)
                 {
-                    WriteLog(e.Message);
+                    //WriteLog(e.Message);
                     return;
                 }
 
@@ -481,10 +492,10 @@ namespace WpfApp1
                             str = "[ Port ] " + str;
                         
                         str = str.Trim(new Char[] { '\n', '\r' });
-
                         WriteLog(str);
                     }     
                 });
+                
 
                 Thread.Sleep(100);
             }   
