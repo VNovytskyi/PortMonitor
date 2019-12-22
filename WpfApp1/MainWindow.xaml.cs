@@ -66,10 +66,27 @@ namespace WpfApp1
 
         private void WriteLog(string str)
         {
-            if (CommandTimeCheckBox.IsChecked == true)
+            bool b = false;
+            Dispatcher.Invoke(() => b = CommandTimeCheckBox.IsChecked == true);
+            if (b == true)
                 str = "[ " + DateTime.UtcNow.ToString("HH:mm:ss") + " ] " + str;
 
-            Write(str, Colors.Black, TextAlignment.Left);
+            bool a = false;
+            Dispatcher.Invoke(() => a = ColorOutputCheckBox.IsChecked == true);
+
+            if (a)
+            {
+                if (str.IndexOf("[ OK ]") != -1)
+                    Write(str, Colors.Green, TextAlignment.Left);
+                else if (str.IndexOf("[ ERROR ]") != -1)
+                    Write(str, Colors.Red, TextAlignment.Left);
+                else
+                    Write(str, Colors.Black, TextAlignment.Left);
+            }
+            else
+            {
+                Write(str, Colors.Black, TextAlignment.Left);
+            }
         }
 
         private void WriteSystemLog(string str)
@@ -295,6 +312,8 @@ namespace WpfApp1
 
         private void ConnectToComPortFunc()
         {
+            Thread.Sleep(100);
+
             string pn = "";
             int br = 0, db = 0, rt = 0, wt = 0;
             Parity p = Parity.None;
@@ -382,46 +401,48 @@ namespace WpfApp1
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            TransiverData = new Thread(TransiverDataFunc);
-            TransiverData.Start();
+            TransiverData = new Thread(new ParameterizedThreadStart(TransiverDataFunc));
+            TransiverData.Start(SendDataTextBox.Text);
         }
 
-        private void TransiverDataFunc()
+        private void TransiverDataFunc(object str)
         {
+            string strToSend = str.ToString();
+            string strToDisplay = str.ToString();
+
+            object selectedItem = new object();
+            Dispatcher.Invoke(() => selectedItem = EndOfLineComboBox.SelectedItem);
+
+            switch (selectedItem)
+            {
+                case "None":
+                    break;
+
+                case "NL":
+                    strToSend += "\n";
+                    break;
+
+                case "CR":
+                    strToSend += "\r";
+                    break;
+
+                case "NL&CR":
+                    strToSend += "\r\n";
+                    break;
+            }
+
+            try
+            {
+                serialPort.Write(strToSend);
+            }
+            catch(Exception e)
+            {
+                WriteSystemLog("TransiverDataFunc" + e.Message);
+                return;
+            }
+
             Dispatcher.Invoke(() =>
             {
-                string strToSend = SendDataTextBox.Text;
-                string strToDisplay = SendDataTextBox.Text;
-
-                switch (EndOfLineComboBox.SelectedItem)
-                {
-                    case "None":
-                        break;
-
-                    case "NL":
-                        strToSend += "\n";
-                        break;
-
-                    case "CR":
-                        strToSend += "\r";
-                        break;
-
-                    case "NL&CR":
-                        strToSend += "\r\n";
-                        break;
-                }
-
-                try
-                {
-                    serialPort.Write(strToSend);
-                }
-                catch(Exception e)
-                {
-                    WriteSystemLog("TransiverDataFunc" + e.Message);
-                    return;
-                }
-
-
                 if (DisplaySenderCheckBox.IsChecked == true)
                     strToDisplay = "[ PC ] " + strToDisplay;
 
@@ -431,6 +452,7 @@ namespace WpfApp1
                 if (ClearInputFieldAfterSendCheckBox.IsChecked == true)
                     SendDataTextBox.Clear();
             });
+
         }
 
         private void ReceiverDataFunc()
@@ -447,7 +469,7 @@ namespace WpfApp1
                 }
                 catch (Exception e)
                 {
-                    //WriteSystemLog("ReceiverDataFunc" + e.Message);
+                    WriteLog(e.Message);
                     return;
                 }
 
@@ -471,6 +493,14 @@ namespace WpfApp1
         private void Button_Click_2(object sender, RoutedEventArgs e)
         {
             outputField.Document.Blocks.Clear();
+        }
+
+        private void SendDataTextBox_KeyUp(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == System.Windows.Input.Key.Enter)
+            {
+                Button_Click_1(null, null);
+            }
         }
     }
 }
