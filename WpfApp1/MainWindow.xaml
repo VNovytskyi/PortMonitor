@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WpfApp1"
         mc:Ignorable="d"
-        Title="Port monitor" Height="523.2" Width="853.6">
+        Title="Port monitor" Height="519.6" Width="853.6">
     <Grid Margin="0,0,-0.4,3">
         <GroupBox Header="Display" HorizontalAlignment="Left" Height="91" Margin="672,10,0,0" VerticalAlignment="Top" Width="156" FontSize="14"/>
         <RichTextBox FontSize="14" Padding="0 3 0 0" x:Name="outputField" HorizontalAlignment="Left" Height="366" Margin="226,63,0,0" VerticalAlignment="Top" Width="437">
@@ -35,10 +35,10 @@
         <Button Content="Clear output" HorizontalAlignment="Left" Margin="20,427,0,0" VerticalAlignment="Top" Width="177" Height="23" FontSize="14" Click="Button_Click_2"/>
         <TextBox HorizontalAlignment="Left" Height="23" Margin="226,22,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="367" FontSize="14"/>
         <GroupBox Header="Display mode" HorizontalAlignment="Left" Height="91" VerticalAlignment="Top" Width="156" Margin="672,107,0,0" FontSize="14"/>
-        <CheckBox Content="Command time" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="691,72,0,0" Width="121" FontSize="14"/>
+        <CheckBox IsChecked="True" x:Name="CommandTimeCheckBox" Content="Command time" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="691,72,0,0" Width="121" FontSize="14"/>
         <RadioButton GroupName="DisplayMode" IsChecked="True" Content="Standart" HorizontalAlignment="Left" Margin="691,144,0,0" VerticalAlignment="Top" FontSize="14"/>
         <RadioButton GroupName="DisplayMode" Content="Correspondence" HorizontalAlignment="Left" Margin="691,170,0,0" VerticalAlignment="Top" FontSize="14"/>
-        <CheckBox Content="System logs" HorizontalAlignment="Left" Margin="691,44,0,0" VerticalAlignment="Top" FontSize="14"/>
+        <CheckBox x:Name="SystemLogsCheckBox" IsChecked="True" Content="System logs" HorizontalAlignment="Left" Margin="691,44,0,0" VerticalAlignment="Top" FontSize="14"/>
         <ComboBox x:Name="EndOfLineComboBox" HorizontalAlignment="Left" Margin="112,308,0,0" VerticalAlignment="Top" Width="78" Height="23"/>
         <Label Content="End of line:" HorizontalAlignment="Left" Margin="20,302,0,0" VerticalAlignment="Top" FontSize="14"/>
     </Grid>

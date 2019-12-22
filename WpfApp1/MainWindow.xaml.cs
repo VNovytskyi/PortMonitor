@@ -33,7 +33,7 @@ namespace WpfApp1
 
         private static string[] baudRateValues = { "9600", "115200"};
         private static string[] dataBitsValues = { "5", "6", "7", "8", "9"};
-        private static string[] parityValues = { "none", "odd", "even", "mark", "space"};
+        private static string[] parityValues = { "None", "Odd", "Even", "Mark", "Space"};
         private static string[] stopBitsValues = { "1", "2", "1.5"};
         private static string[] EndOfLineValues = {"None", "NL", "CR", "NL&CR"};
         private static int oldComPortsAmount = -1;
@@ -57,12 +57,9 @@ namespace WpfApp1
 
             RefreshComPortsList = new Thread(RefreshComPortsListFunc);
             RefreshComPortsList.Start();
-
-            AddWithColor("[ OK ] Init BME280", Colors.Green, TextAlignment.Left); 
-            AddWithColor("[ ERROR ] Connect to Wi-Fi", Colors.Red, TextAlignment.Right);
         }
 
-        void AddWithColor(string s, Color color, TextAlignment ta)
+        void Write(string s, Color color, TextAlignment ta)
         {
             var text = new Run(s) { Foreground = new SolidColorBrush(color) };
             var p = new Paragraph(text);
@@ -81,11 +78,15 @@ namespace WpfApp1
                 Dispatcher.Invoke(() => portState = serialPort.IsOpen);
 
                 if (!portState)
+                {
                     StopConnection();
-                
-                //Debug
-                Dispatcher.Invoke(() => l.Content = portState);
 
+                    Dispatcher.Invoke(() =>
+                    {
+                        if (SystemLogsCheckBox.IsChecked == true)
+                            Write("Connection is broken", Colors.Black, TextAlignment.Left);
+                    });
+                }
                 Thread.Sleep(100);
             }
         }
@@ -150,7 +151,7 @@ namespace WpfApp1
                 PortsComboBox.SelectedIndex = 0;
                 BaudRateValuesComboBox.SelectedItem = "115200";
                 DataBitsValuesComboBox.SelectedItem = "8";
-                ParityValuesComboBox.SelectedItem = "none";
+                ParityValuesComboBox.SelectedItem = "None";
                 StopBitsValuesComboBox.SelectedItem = "1";
                 EndOfLineComboBox.SelectedItem = "NL&CR";
             });
@@ -208,7 +209,7 @@ namespace WpfApp1
             foreach (string parityValue in parityValues)
                 ParityValuesComboBox.Items.Add(parityValue);
 
-            ParityValuesComboBox.SelectedItem = "none";
+            ParityValuesComboBox.SelectedItem = "None";
         }
 
         private void InitDataBitsValuesComboBox()
@@ -243,11 +244,22 @@ namespace WpfApp1
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
+            string temp = "";
+
+            if (CommandTimeCheckBox.IsChecked == true)
+                temp += "[ " + DateTime.UtcNow.ToString("HH:mm:ss") + " ] ";
+
+            temp += "Try connect to " + PortsComboBox.SelectedItem + " (" +
+                          BaudRateValuesComboBox.SelectedItem + ", " +
+                          DataBitsValuesComboBox.SelectedItem + ", " +
+                          ParityValuesComboBox.SelectedItem + ", " +
+                          StopBitsValuesComboBox.SelectedItem + ")";
+
+            if (SystemLogsCheckBox.IsChecked == true)
+                Write(temp, Colors.Black, TextAlignment.Left);
+            
             allowRefreshComPorts.Reset();
-     
             DisableSettings();
-
-
             ConnectToComPort = new Thread(ConnectToComPortFunc);
             ConnectToComPort.Start();
         }
@@ -284,9 +296,15 @@ namespace WpfApp1
 
                 serialPort.Open();
             }
-            catch (NullReferenceException)
+            catch (Exception e)
             {
-
+                Dispatcher.Invoke(() =>
+                {
+                    if (SystemLogsCheckBox.IsChecked == true)
+                        Write(e.Message, Colors.Black, TextAlignment.Left);
+                });
+                StopConnection();
+                return;
             }
 
             allowRefreshCurrentComPortState.Set();
@@ -295,23 +313,33 @@ namespace WpfApp1
             {
                 DisconnectToComPortButton.IsEnabled = true;
                 SendDataButton.IsEnabled = true;
+
+                if (SystemLogsCheckBox.IsChecked == true)
+                    Write("Connection successful", Colors.Black, TextAlignment.Left);
             });
         }
 
         private void DisconnectToComPortButton_Click(object sender, RoutedEventArgs e)
         {
             StopConnection();
+
+            string temp = "";
+            if (CommandTimeCheckBox.IsChecked == true)
+                temp += "[ " + DateTime.UtcNow.ToString("HH:mm:ss") + " ] ";
+            temp += "Connection is closed";
+
+            if (SystemLogsCheckBox.IsChecked == true)
+                Write(temp, Colors.Black, TextAlignment.Left);
         }
 
         private void StopConnection()
         {
-            EnableSettings();
-            CloseComPort();
             allowRefreshCurrentComPortState.Reset();
+            CloseComPort();
+            EnableSettings();
             allowRefreshComPorts.Set();
 
             Dispatcher.Invoke(()=> SendDataButton.IsEnabled = false);
-            
         }
 
         private void CloseComPort()
