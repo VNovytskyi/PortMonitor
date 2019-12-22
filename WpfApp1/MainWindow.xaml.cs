@@ -33,11 +33,9 @@ namespace WpfApp1
 
         private static string[] baudRateValues = { "9600", "115200"};
         private static string[] dataBitsValues = { "5", "6", "7", "8", "9"};
-
-        
         private static string[] parityValues = { "none", "odd", "even", "mark", "space"};
         private static string[] stopBitsValues = { "1", "2", "1.5"};
-
+        private static string[] EndOfLineValues = {"None", "NL", "CR", "NL&CR"};
         private static int oldComPortsAmount = -1;
 
         public MainWindow()
@@ -48,6 +46,9 @@ namespace WpfApp1
             InitDataBitsValuesComboBox();
             InitParityValuesComboBox();
             InitStopBitsValuesComboBox();
+            InitEndOfLineComboBox();
+
+            SendDataButton.IsEnabled = false;
 
             serialPort = new SerialPort();
 
@@ -138,6 +139,7 @@ namespace WpfApp1
                 DisconnectToComPortButton.IsEnabled = false;
                 WriteTimeoutTextBox.IsEnabled = true;
                 ReadTimeoutTextBox.IsEnabled = true;
+                EndOfLineComboBox.IsEnabled = true;
             });
         }
 
@@ -150,6 +152,7 @@ namespace WpfApp1
                 DataBitsValuesComboBox.SelectedItem = "8";
                 ParityValuesComboBox.SelectedItem = "none";
                 StopBitsValuesComboBox.SelectedItem = "1";
+                EndOfLineComboBox.SelectedItem = "NL&CR";
             });
         }
 
@@ -166,6 +169,8 @@ namespace WpfApp1
                 DisconnectToComPortButton.IsEnabled = true;
                 WriteTimeoutTextBox.IsEnabled = false;
                 ReadTimeoutTextBox.IsEnabled = false;
+                ConnectToComPortButton.IsEnabled = false;
+                DisconnectToComPortButton.IsEnabled = false;
             });
         }
 
@@ -177,12 +182,17 @@ namespace WpfApp1
                 DataBitsValuesComboBox.SelectedIndex = -1;
                 ParityValuesComboBox.SelectedIndex = -1;
                 StopBitsValuesComboBox.SelectedIndex = -1;
-                ConnectToComPortButton.IsEnabled = false;
-                DisconnectToComPortButton.IsEnabled = false;
-                WriteTimeoutTextBox.IsEnabled = false;
-                ReadTimeoutTextBox.IsEnabled = false;
-
+                EndOfLineComboBox.SelectedIndex = -1;
+                EndOfLineComboBox.IsEnabled = false;
             });
+        }
+
+        private void InitEndOfLineComboBox()
+        {
+            foreach (string EndOfLineValue in EndOfLineValues)
+                EndOfLineComboBox.Items.Add(EndOfLineValue);
+
+            EndOfLineComboBox.SelectedItem = "NL&CR";
         }
 
         private void InitStopBitsValuesComboBox()
@@ -237,6 +247,7 @@ namespace WpfApp1
      
             DisableSettings();
 
+
             ConnectToComPort = new Thread(ConnectToComPortFunc);
             ConnectToComPort.Start();
         }
@@ -279,6 +290,12 @@ namespace WpfApp1
             }
 
             allowRefreshCurrentComPortState.Set();
+
+            Dispatcher.Invoke(() =>
+            {
+                DisconnectToComPortButton.IsEnabled = true;
+                SendDataButton.IsEnabled = true;
+            });
         }
 
         private void DisconnectToComPortButton_Click(object sender, RoutedEventArgs e)
@@ -292,6 +309,9 @@ namespace WpfApp1
             CloseComPort();
             allowRefreshCurrentComPortState.Reset();
             allowRefreshComPorts.Set();
+
+            Dispatcher.Invoke(()=> SendDataButton.IsEnabled = false);
+            
         }
 
         private void CloseComPort()
