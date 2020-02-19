@@ -34,7 +34,7 @@
         <Button Content="Clear output" HorizontalAlignment="Left" Margin="20,427,0,0" VerticalAlignment="Top" Width="177" Height="23" FontSize="14" Click="Button_Click_2"/>
         <TextBox KeyUp="SendDataTextBox_KeyUp" IsEnabled="False" x:Name="SendDataTextBox" HorizontalAlignment="Left" Height="23" Margin="226,22,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="367" FontSize="14"/>
         <GroupBox Header="Display mode" HorizontalAlignment="Left" Height="91" VerticalAlignment="Top" Width="156" Margin="672,195,0,0" FontSize="14"/>
-        <CheckBox IsChecked="True" x:Name="CommandTimeCheckBox" Content="Command time" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="691,72,0,0" Width="121" FontSize="14"/>
+        <CheckBox IsChecked="False" x:Name="CommandTimeCheckBox" Content="Command time" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="691,72,0,0" Width="121" FontSize="14"/>
         <RadioButton GroupName="DisplayMode" IsChecked="True" Content="Standart" HorizontalAlignment="Left" Margin="691,232,0,0" VerticalAlignment="Top" FontSize="14"/>
         <RadioButton GroupName="DisplayMode" Content="Correspondence" HorizontalAlignment="Left" Margin="691,258,0,0" VerticalAlignment="Top" FontSize="14"/>
         <CheckBox x:Name="SystemLogsCheckBox" IsChecked="True" Content="System logs" HorizontalAlignment="Left" Margin="691,44,0,0" VerticalAlignment="Top" FontSize="14"/>
@@ -42,9 +42,10 @@
         <Label Content="End of line:" HorizontalAlignment="Left" Margin="20,302,0,0" VerticalAlignment="Top" FontSize="14"/>
         <CheckBox x:Name="DisplayReceiverDataCheckBox" IsChecked="True" Content="Receiver data" HorizontalAlignment="Left" Margin="691,130,0,0" VerticalAlignment="Top" FontSize="14" Width="108"/>
         <CheckBox x:Name="DisplayTransiverDataCheckBox" IsChecked="True" Content="Transiver data" HorizontalAlignment="Left" Margin="691,101,0,0" VerticalAlignment="Top" FontSize="14" Width="121"/>
-        <CheckBox IsChecked="True" x:Name="DisplaySenderCheckBox" Content="Sender" HorizontalAlignment="Left" Margin="691,159,0,0" VerticalAlignment="Top" FontSize="14"/>
+        <CheckBox IsChecked="False" x:Name="DisplaySenderCheckBox" Content="Sender" HorizontalAlignment="Left" Margin="691,159,0,0" VerticalAlignment="Top" FontSize="14"/>
         <CheckBox x:Name="ClearInputFieldAfterSendCheckBox" Content="Clear after send" HorizontalAlignment="Left" Margin="691,302,0,0" VerticalAlignment="Top" FontSize="14"/>
         <CheckBox x:Name="AutoConnectToPortCheckBox" IsChecked="True" Content="Auto connect" HorizontalAlignment="Left" Margin="691,325,0,0" VerticalAlignment="Top" FontSize="14"/>
         <CheckBox x:Name="ColorOutputCheckBox" IsChecked="True" Content="Color RX output" HorizontalAlignment="Left" Margin="691,348,0,0" VerticalAlignment="Top" FontSize="14"/>
+        <Button Content="Привет" HorizontalAlignment="Left" Margin="719,393,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click_3"/>
     </Grid>
 </Window>

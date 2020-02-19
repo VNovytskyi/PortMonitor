@@ -59,11 +59,10 @@ namespace WpfApp1
             Dispatcher.Invoke(() =>
             {
                 var text = new Run(s) { Foreground = new SolidColorBrush(color) };
-            var p = new Paragraph(text);
-            p.LineHeight = 2;
-            p.TextAlignment = ta;
+                var p = new Paragraph(text);
+                p.LineHeight = 2;
+                p.TextAlignment = ta;
 
-            
                 outputField.Document.Blocks.Add(p);
                 outputField.ScrollToEnd();
             });
@@ -126,8 +125,6 @@ namespace WpfApp1
                     StopConnection();
                     WriteSystemLog("Connection is broken");
                 }
-                
-                Thread.Sleep(100);
             }
         }
 
@@ -388,7 +385,6 @@ namespace WpfApp1
             allowRefreshCurrentComPortState.Reset();
             CloseComPort();
             EnableSettings();
-            allowRefreshComPorts.Set();
 
             Dispatcher.Invoke(()=>
             {
@@ -396,6 +392,7 @@ namespace WpfApp1
                 SendDataButton.IsEnabled = false;
             });
 
+            allowRefreshComPorts.Set();
         }
 
         private void CloseComPort()
@@ -512,6 +509,14 @@ namespace WpfApp1
             {
                 Button_Click_1(null, null);
             }
+        }
+
+        private void Button_Click_3(object sender, RoutedEventArgs e)
+        {
+            string[] ports = SerialPort.GetPortNames();
+
+            foreach (string port in ports)
+                WriteLog(port);
         }
     }
 }
