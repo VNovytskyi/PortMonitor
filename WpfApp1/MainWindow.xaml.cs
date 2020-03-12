@@ -473,7 +473,8 @@ namespace WpfApp1
 
                 try
                 {
-                    str += serialPort.ReadExisting();
+                    //str += serialPort.ReadExisting();
+                    str += serialPort.ReadLine();
                 }
                 catch (Exception e)
                 {
@@ -494,7 +495,7 @@ namespace WpfApp1
                 });
                 
 
-                Thread.Sleep(100);
+                Thread.Sleep(10);
             }   
         }
 
