@@ -125,6 +125,8 @@ namespace WpfApp1
                     StopConnection();
                     WriteSystemLog("Connection is broken");
                 }
+
+                Thread.Sleep(100);
             }
         }
 
@@ -369,9 +371,7 @@ namespace WpfApp1
             
             WriteSystemLog("Connection successful");
 
-            ReceiverData = new Thread(ReceiverDataFunc);
-            ReceiverData.IsBackground = true;
-            ReceiverData.Start();
+            serialPort.DataReceived += new SerialDataReceivedEventHandler(ReceiverDataFunc);
         }
 
         private void DisconnectToComPortButton_Click(object sender, RoutedEventArgs e)
@@ -463,40 +463,32 @@ namespace WpfApp1
 
         }
 
-        private void ReceiverDataFunc()
+        private void ReceiverDataFunc(object sender, SerialDataReceivedEventArgs e)
         {
+            SerialPort sp = (SerialPort)sender;
             string str = String.Empty;
 
-            while (true)
+            try
             {
-                str = String.Empty;
+                str = serialPort.ReadLine();
+            }
+            catch (Exception ex)
+            {
+                WriteLog(ex.Message);
+                return;
+            }
 
-                try
+            Dispatcher.Invoke(() =>
+            {
+                if (!String.IsNullOrEmpty(str) && DisplayReceiverDataCheckBox.IsChecked == true)
                 {
-                    //str += serialPort.ReadExisting();
-                    str += serialPort.ReadLine();
-                }
-                catch (Exception e)
-                {
-                    //WriteLog(e.Message);
-                    return;
-                }
-
-                Dispatcher.Invoke(() =>
-                {
-                    if (!String.IsNullOrEmpty(str) && DisplayReceiverDataCheckBox.IsChecked == true)
-                    {
-                        if (DisplaySenderCheckBox.IsChecked == true)
-                            str = "[ Port ] " + str;
-                        
-                        str = str.Trim(new Char[] { '\n', '\r' });
-                        WriteLog(str);
-                    }     
-                });
-                
-
-                Thread.Sleep(10);
-            }   
+                    if (DisplaySenderCheckBox.IsChecked == true)
+                        str = "[ Port ] " + str;
+                    
+                    str = str.Trim(new Char[] { '\n', '\r' });
+                    WriteLog(str);
+                }     
+            });
         }
 
         private void Button_Click_2(object sender, RoutedEventArgs e)
